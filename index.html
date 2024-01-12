@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZIP and .dat File Processor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+</head>
+<body>
+    <h2>Process .dat Files in ZIP</h2>
+    <input type="file" id="fileInput" accept=".zip">
+    <button id="processBtn">Process ZIP</button>
+
+    <script>
+        document.getElementById('processBtn').addEventListener('click', () => {
+            let fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                alert('Please select a ZIP file first.');
+                return;
+            }
+
+            let file = fileInput.files[0];
+            processZipFile(file);
+        });
+
+        function processZipFile(file) {
+            JSZip.loadAsync(file)
+                .then(zip => {
+                    let promises = [];
+
+                    Object.keys(zip.files).forEach(fileName => {
+                        if (fileName.endsWith('.dat')) {
+                            let promise = zip.files[fileName].async('string')
+                                .then(content => {
+                                    let jsonData = JSON.parse(content);
+                                    jsonData.colorNotes.forEach(note => {
+                                        if (note.d === undefined) {
+                                            note.d = 0;
+                                        }
+                                    });
+                                    zip.file(fileName, JSON.stringify(jsonData, null, 4));
+                                });
+                            promises.push(promise);
+                        }
+                    });
+
+                    Promise.all(promises).then(() => {
+                        zip.generateAsync({type: "blob"})
+                            .then(blob => downloadBlob(blob, 'processed.zip'));
+                    });
+                });
+        }
+
+        function downloadBlob(blob, fileName) {
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = fileName;
+            anchor.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
