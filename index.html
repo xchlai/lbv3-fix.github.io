@@ -13,8 +13,13 @@
     <p>问题谱面特点：</br>1.通常为V3谱面（并不是V3谱面都有问题，只有少数）</br>2.谱面完全没有向上箭头，但有大量向下箭头（不包含斜向箭头）。</p>
     <p>by 舞剑不说话</p>
 
+    <h3>处理ZIP文件中的谱面</h3>
     <input type="file" id="fileInput" accept=".zip">
-    <button id="processBtn" onclick="processSelectedFile()">处理文件</button>
+    <button id="processZipBtn" onclick="processSelectedZip()">处理ZIP文件</button>
+
+    <h3>处理单个难度(.dat)文件</h3>
+    <input type="file" id="singleDatInput" accept=".dat">
+    <button id="processDatBtn" onclick="processSelectedDat()">处理DAT文件</button>
 
     <script>
         function processSelectedFile() {
@@ -62,6 +67,36 @@
                     .catch(e => console.error('处理文件出错:', e));
                 })
                 .catch(e => console.error('加载ZIP文件出错:', e));
+        }
+
+        function processSelectedDat() {
+            let fileInput = document.getElementById('singleDatInput');
+            if (!fileInput.files.length) {
+                alert('请先选择一个DAT文件。');
+                return;
+            }
+            processDatFile(fileInput.files[0]);
+        }
+
+        function processDatFile(file) {
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    let jsonData = JSON.parse(event.target.result);
+                    if (jsonData.colorNotes && Array.isArray(jsonData.colorNotes)) {
+                        jsonData.colorNotes.forEach(note => {
+                            if (note.d === undefined) {
+                                note.d = 0;
+                            }
+                        });
+                        downloadBlob(new Blob([JSON.stringify(jsonData, null, 4)], {type: "application/json"}), file.name);
+                    }
+                } catch (e) {
+                    console.error('处理DAT文件出错:', e);
+                    alert('DAT文件格式不正确或已损坏。');
+                }
+            };
+            reader.readAsText(file);
         }
 
         function downloadBlob(blob, fileName) {
