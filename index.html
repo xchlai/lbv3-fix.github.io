@@ -1,44 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZIP and .dat File Processor</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <title>光之乐团问题V3谱面转换工具</title>
+    <script src="https://cdn.staticfile.org/jszip/3.6.0/jszip.min.js"></script>
 </head>
 <body>
-    <h2>Process .dat Files in ZIP</h2>
+    <h2>光之乐团问题谱面转换工具</h2>
+    <p>此工具用于处理光之乐团的问题V3谱面。上传旧谱面，并将生成的新谱面导入光之乐团即可。</p>
+    <p>说明：部分谱面在光之乐团中箭头的方向出错，导致出现大量同向箭头。问题产生的原因是，由于原始谱面文件追求更小的文件大小，对于默认方向（向上，d=0）的note省略了对于方向的定义，而光之乐团中的默认方向与BS相反，会导致原先向上的箭头变为向下。使用本工具可以生成与bs中方向一致的谱面文件</p>
+    <p>问题谱面特点：1.通常为V3谱面（并不是V3谱面都有问题，只有少数）</br>2.谱面完全没有向上箭头，但有大量向下箭头（不包含斜向箭头）。</p>
+
     <input type="file" id="fileInput" accept=".zip">
-    <button id="processBtn">Process ZIP</button>
+    <button id="processBtn" onclick="processSelectedFile()">处理文件</button>
 
     <script>
-        document.getElementById('processBtn').addEventListener('click', () => {
+        function processSelectedFile() {
             let fileInput = document.getElementById('fileInput');
             if (!fileInput.files.length) {
-                alert('Please select a ZIP file first.');
+                alert('请先选择一个ZIP文件。');
                 return;
             }
-
-            let file = fileInput.files[0];
-            processZipFile(file);
-        });
+            processZipFile(fileInput.files[0]);
+        }
 
         function processZipFile(file) {
             JSZip.loadAsync(file)
                 .then(zip => {
                     let promises = [];
+                    let outputFileName = file.name.replace(/\.zip$/, '') + '_fixed.zip';
 
                     Object.keys(zip.files).forEach(fileName => {
                         if (fileName.endsWith('.dat')) {
                             let promise = zip.files[fileName].async('string')
                                 .then(content => {
-                                    let jsonData = JSON.parse(content);
-                                    jsonData.colorNotes.forEach(note => {
-                                        if (note.d === undefined) {
-                                            note.d = 0;
+                                    try {
+                                        let jsonData = JSON.parse(content);
+                                        if (jsonData.colorNotes && Array.isArray(jsonData.colorNotes)) {
+                                            jsonData.colorNotes.forEach(note => {
+                                                if (note.d === undefined) {
+                                                    note.d = 0;
+                                                }
+                                            });
+                                            zip.file(fileName, JSON.stringify(jsonData, null, 4));
                                         }
-                                    });
-                                    zip.file(fileName, JSON.stringify(jsonData, null, 4));
+                                    } catch (e) {
+                                        console.error('处理文件出错:', fileName, e);
+                                    }
                                 });
                             promises.push(promise);
                         }
@@ -46,9 +55,12 @@
 
                     Promise.all(promises).then(() => {
                         zip.generateAsync({type: "blob"})
-                            .then(blob => downloadBlob(blob, 'processed.zip'));
-                    });
-                });
+                            .then(blob => downloadBlob(blob, outputFileName))
+                            .catch(e => console.error('生成ZIP文件出错:', e));
+                    })
+                    .catch(e => console.error('处理文件出错:', e));
+                })
+                .catch(e => console.error('加载ZIP文件出错:', e));
         }
 
         function downloadBlob(blob, fileName) {
