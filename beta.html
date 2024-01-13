@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -15,6 +15,10 @@
     <p>by 舞剑不说话</p>
     <label><input type="checkbox" id="checkboxV3repair" checked> 修复V3谱面同向问题</label>
     <label><input type="checkbox" id="checkboxSwitchHands"> 交换左右手</label>
+    <label><input type="checkbox" id="checkboxRemoveLeft" onclick="checkExclusive('checkboxRemoveLeft', 'checkboxRemoveRight')"> 删除左手</label>
+    <label><input type="checkbox" id="checkboxRemoveRight" onclick="checkExclusive('checkboxRemoveRight', 'checkboxRemoveLeft')"> 删除右手</label>
+    <label><input type="checkbox" id="checkboxRemoveWall"> 移除墙和炸弹</label>
+    <label style="display: none;"><input type="checkbox" id="checkboxSupereasy" disabled> 超级简单模式</label>
 
 
     <h3>处理ZIP文件中的谱面</h3>
@@ -26,6 +30,12 @@
     <button id="processDatBtn" onclick="processSelectedDat()">处理DAT文件</button>
 
     <script>
+        function checkExclusive(checkedId, otherId) {
+            if (document.getElementById(checkedId).checked) {
+                document.getElementById(otherId).checked = false;
+            }
+        }
+
         function processJsonData(jsonData) {
             // 创建一个通用的处理函数
             function addDefaultDirection(notes) {
@@ -78,6 +88,50 @@
             return jsonData;
         }
 
+        function removeHand(jsonData, cValue) {
+            ['colorNotes', 'sliders', 'burstSliders'].forEach(key => {
+                if (jsonData[key] && Array.isArray(jsonData[key])) {
+                    jsonData[key] = jsonData[key].filter(item => item.c !== cValue);
+                }
+            });
+
+            return jsonData;
+        }
+
+        function clearBombNotesAndObstacles(jsonData) {
+            // 如果存在，则清空 bombNotes 和 obstacles 数组
+            if (jsonData.bombNotes && Array.isArray(jsonData.bombNotes)) {
+                jsonData.bombNotes = [];
+            }
+
+            if (jsonData.obstacles && Array.isArray(jsonData.obstacles)) {
+                jsonData.obstacles = [];
+            }
+
+            return jsonData;
+        }
+
+        function SuperEasy(jsonData) {
+            ['colorNotes', 'sliders', 'burstSliders'].forEach(key => {
+                if (jsonData[key] && Array.isArray(jsonData[key])) {
+                    jsonData[key].forEach(item => {
+                        // 如果c为0，则将x置为1；如果c为1，则将x置为2
+                        if (item.c === 0) {
+                            item.x = 1;
+                        } else if (item.c === 1) {
+                            item.x = 2;
+                        }
+
+                        // 将所有元素的y置为0，d置为8
+                        item.y = 0;
+                        item.d = 8;
+                    });
+                }
+            });
+
+            return jsonData;
+        }
+
         function processSelectedFile() {
             let fileInput = document.getElementById('fileInput');
             if (!fileInput.files.length) {
@@ -88,13 +142,10 @@
         }
 
         function processZipFile(file) {
-            let applyV3repair = document.getElementById('checkboxV3repair').checked;
-            let applySwitchHands = document.getElementById('checkboxSwitchHands').checked;
             JSZip.loadAsync(file)
                 .then(zip => {
                     let promises = [];
                     let outputFileName = file.name.replace(/\.zip$/, '') + '_fixed.zip';
-
                     Object.keys(zip.files).forEach(fileName => {
                         if (fileName.endsWith('.dat')) {
                             let promise = zip.files[fileName].async('string')
@@ -102,8 +153,12 @@
                                     try {
                                         let jsonData = JSON.parse(content);
                                         if (jsonData.colorNotes && Array.isArray(jsonData.colorNotes)) {
-                                            if (applyV3repair) jsonData = processJsonData(jsonData); 
-                                            if (applySwitchhands) jsonData = processSwitchHands(jsonData);
+                                            if (document.getElementById('checkboxV3repair').checkedr) jsonData = processJsonData(jsonData); 
+                                            if (document.getElementById('checkboxSwitchHands').checked) jsonData = processSwitchHands(jsonData);
+                                            if (document.getElementById('checkboxRemoveLeft').checked) jsonData = removeHand(jsonData,0);
+                                            if (document.getElementById('checkboxRemoveRight').checked) jsonData = removeHand(jsonData,1);
+                                            if (document.getElementById('checkboxRemoveWall').checked) jsonData = clearBombNotesAndObstacles(jsonData);
+                                            if (document.getElementById('checkboxSupereasy').checked) jsonData = superEasy(jsonData);
                                             zip.file(fileName, JSON.stringify(jsonData, null, 4));
                                         }
                                     } catch (e) {
