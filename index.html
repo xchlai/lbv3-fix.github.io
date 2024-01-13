@@ -131,9 +131,6 @@
             ['colorNotes', 'sliders', 'burstSliders'].forEach(key => {
                 if (jsonData[key]) {
                     jsonData[key].forEach(item => {
-                        if (!('x' in item)) {
-                            item.x = 0;
-                        }   
                         if (!('c' in item)) {
                             item.c = 0;
                         }   
@@ -163,6 +160,7 @@
             ['colorNotes', 'bombNotes', 'obstacles', 'sliders', 'burstSliders'].forEach(key => {
                 if (jsonData[key]) {
                     jsonData[key].forEach(item => {
+                        if (!('x' in item)) item.x = 0;
                         item.x = 3 - item.x;
                     });
                 }
