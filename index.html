@@ -131,6 +131,9 @@
             ['colorNotes', 'sliders', 'burstSliders'].forEach(key => {
                 if (jsonData[key]) {
                     jsonData[key].forEach(item => {
+                        if (!('x' in item)) {
+                            item.x = 0;
+                        }   
                         if (!('c' in item)) {
                             item.c = 0;
                         }   
@@ -160,8 +163,19 @@
             ['colorNotes', 'bombNotes', 'obstacles', 'sliders', 'burstSliders'].forEach(key => {
                 if (jsonData[key]) {
                     jsonData[key].forEach(item => {
-                        if ('x' in item) item.x = 3 - item.x;
-                        if ('tx' in item) item.tx = 3 - item.tx;
+                        item.x = 3 - item.x;
+                        if ('tx' in item) 
+                        item.tx = 3 - item.tx;
+                    });
+                }
+            });
+
+            ['sliders', 'burstSliders'].forEach(key => {
+                if (jsonData[key]) {
+                    jsonData[key].forEach(item => {
+                        item.x = 3 - item.x;
+                        if (!('tx' in item)) item.tx = 0;
+                        item.tx = 3 - item.tx;
                     });
                 }
             });
