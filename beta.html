@@ -5,18 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>光之乐团问题V3谱面转换工具</title>
     <script src="https://cdn.staticfile.org/jszip/3.6.0/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+    
+        h2, h3 {
+            color: #444;
+        }
+    
+        p {
+            margin-bottom: 10px;
+        }
+    
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+    
+        input[type="checkbox"] {
+            margin-right: 5px;
+        }
+    
+        input[type="file"] {
+            border: 1px solid #ddd;
+            padding: 8px;
+            border-radius: 4px;
+        }
+    
+        button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    
+        button:hover {
+            background-color: #4cae4c;
+        }
+    
+        #log {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #eee;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+    
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+    
+            input[type="file"], button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>    
 </head>
 <body>
-    <h2>光之乐团问题谱面转换工具</h2>
-    <p>此工具用于处理光之乐团的问题V3谱面。上传旧谱面，并将生成的新谱面导入光之乐团即可。</p>
+    <h2>光之乐团谱面转换工具</h2>
+    <h3>暂时只支持V3谱面，V2谱面请等待更新</h3>
+    <p>此工具用于处理光之乐团的V3谱面。上传旧谱面，并将生成的新谱面导入光之乐团即可。</p>
     <p>说明：部分谱面在光之乐团中箭头的方向出错，导致出现大量同向箭头。问题产生的原因是，由于原始谱面文件追求更小的文件大小，对于默认方向（向上，d=0）的note省略了对于方向的定义，而光之乐团中的默认方向与BS相反，会导致原先向上的箭头变为向下。使用本工具可以生成与bs中方向一致的谱面文件</p>
     <p>问题谱面特点：</br>1.通常为V3谱面（并不是V3谱面都有问题，只有少数）</br>2.谱面完全没有向上箭头，但有大量向下箭头（不包含斜向箭头）。</p>
+    <p>注意：转换后谱面相当于全新谱面，和原谱面<b>不共用排行榜</b>，暂时<b>不能</b>在多人模式玩</p>
     <p>2024/1/13 更新sliders、burstSliders处理逻辑</p>
-    <p>by 舞剑不说话</p>
+    <p>2024/1/13 增加左右手互换，单手，去除墙等练习用谱面的转换</p>
+    <p>by 舞剑不说话，bug可在PICO中私聊反馈</p>
     <label><input type="checkbox" id="checkboxV3repair" checked> 修复V3谱面同向问题</label>
     <label><input type="checkbox" id="checkboxSwitchHands"> 交换左右手</label>
-    <label><input type="checkbox" id="checkboxRemoveLeft" onclick="checkExclusive('checkboxRemoveLeft', 'checkboxRemoveRight')"> 删除左手</label>
-    <label><input type="checkbox" id="checkboxRemoveRight" onclick="checkExclusive('checkboxRemoveRight', 'checkboxRemoveLeft')"> 删除右手</label>
+    <label><input type="checkbox" id="checkboxRemoveLeft" onclick="checkExclusive('checkboxRemoveLeft', 'checkboxRemoveRight')"> 删除左手(红色)note</label>
+    <label><input type="checkbox" id="checkboxRemoveRight" onclick="checkExclusive('checkboxRemoveRight', 'checkboxRemoveLeft')"> 删除右手(蓝色)note</label>
     <label><input type="checkbox" id="checkboxRemoveWall"> 移除墙和炸弹</label>
     <label style="display: none;"><input type="checkbox" id="checkboxSupereasy" disabled> 超级简单模式</label>
 
@@ -28,6 +97,7 @@
     <h3>处理单个难度(.dat)文件</h3>
     <input type="file" id="singleDatInput" accept=".dat">
     <button id="processDatBtn" onclick="processSelectedDat()">处理DAT文件</button>
+    <div id="log"></div>
 
     <script>
         function checkExclusive(checkedId, otherId) {
@@ -61,7 +131,10 @@
             ['colorNotes', 'sliders', 'burstSliders'].forEach(key => {
                 if (jsonData[key]) {
                     jsonData[key].forEach(item => {
-                        if ('c' in item) item.c = 1 - item.c;
+                        if (!('c' in item)) {
+                            item.c = 0;
+                        }   
+                        item.c = 1 - item.c;
                         switch (item.d) {
                             case 2: item.d = 3; break;
                             case 3: item.d = 2; break;
@@ -91,6 +164,14 @@
         function removeHand(jsonData, cValue) {
             ['colorNotes', 'sliders', 'burstSliders'].forEach(key => {
                 if (jsonData[key] && Array.isArray(jsonData[key])) {
+                    // 为没有 'c' 属性的元素添加 'c' 属性，并将其值设置为0
+                    jsonData[key].forEach(item => {
+                        if (!('c' in item)) {
+                            item.c = 0;
+                        }
+                    });
+
+                    // 删除那些 'c' 属性值等于给定 cValue 的元素
                     jsonData[key] = jsonData[key].filter(item => item.c !== cValue);
                 }
             });
@@ -152,7 +233,19 @@
                                 .then(content => {
                                     try {
                                         let jsonData = JSON.parse(content);
+
+                                        // Logging file name and version
+                                        let version = jsonData.version || jsonData._version || "未知";
+                                        addLog(`处理文件: ${fileName}, 版本: ${version}`);
+
+                                        // Skip if version is less than 3
+                                        if (parseFloat(version) < 3) {
+                                            addLog(`跳过文件（版本低于3）: ${fileName}`);
+                                            return;
+                                        }
+
                                         if (jsonData.colorNotes && Array.isArray(jsonData.colorNotes)) {
+                                            // Apply modifications
                                             if (document.getElementById('checkboxV3repair').checked) jsonData = processJsonData(jsonData); 
                                             if (document.getElementById('checkboxSwitchHands').checked) jsonData = processSwitchHands(jsonData);
                                             if (document.getElementById('checkboxRemoveLeft').checked) jsonData = removeHand(jsonData,0);
@@ -163,21 +256,37 @@
                                         }
                                     } catch (e) {
                                         console.error('处理文件出错:', fileName, e);
+                                        addLog(`处理文件出错: ${fileName}, 错误: ${e.message}`);
                                     }
                                 });
                             promises.push(promise);
                         }
                     });
 
-                    Promise.all(promises).then(() => {
-                        zip.generateAsync({type: "blob"})
-                            .then(blob => downloadBlob(blob, outputFileName))
-                            .catch(e => console.error('生成ZIP文件出错:', e));
-                    })
-                    .catch(e => console.error('处理文件出错:', e));
-                })
-                .catch(e => console.error('加载ZIP文件出错:', e));
-        }
+            Promise.all(promises).then(() => {
+                zip.generateAsync({type: "blob"})
+                    .then(blob => downloadBlob(blob, outputFileName))
+                    .catch(e => {
+                        console.error('生成ZIP文件出错:', e);
+                        addLog(`生成ZIP文件出错: ${e.message}`);
+                    });
+            })
+            .catch(e => {
+                console.error('处理文件出错:', e);
+                addLog(`处理文件出错: ${e.message}`);
+            });
+        })
+        .catch(e => {
+            console.error('加载ZIP文件出错:', e);
+            addLog(`加载ZIP文件出错: ${e.message}`);
+        });
+}
+
+function addLog(message) {
+    const logDiv = document.getElementById('log');
+    logDiv.innerHTML += message + '<br>';
+}
+
 
         function processSelectedDat() {
             let fileInput = document.getElementById('singleDatInput');
