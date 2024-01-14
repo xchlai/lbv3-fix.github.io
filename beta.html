@@ -372,24 +372,28 @@ function addLog(message) {
             anchor.click();
             window.URL.revokeObjectURL(url);
         }
-function replaceStandardWithSelected(zip, infoData, selectedOption, keepStandard) {
+function replaceStandardWithSelected(zip, infoData, selectedOption) {
     if (selectedOption) {
-        let selectedSetIndex = infoData._difficultyBeatmapSets.findIndex(set => set._beatmapCharacteristicName === selectedOption);
-        
-        if (selectedSetIndex !== -1) {
-            if (!keepStandard) {
-                // 移除原始的Standard集合
-                infoData._difficultyBeatmapSets = infoData._difficultyBeatmapSets.filter(set => set._beatmapCharacteristicName !== 'Standard');
-            }
-            
-            // 将选择的难度重命名为Standard
-            infoData._difficultyBeatmapSets[selectedSetIndex]._beatmapCharacteristicName = 'Standard';
+        // 查找用户选择的难度集合
+        let selectedSet = infoData._difficultyBeatmapSets.find(set => set._beatmapCharacteristicName === selectedOption);
+
+        if (selectedSet) {
+            // 删除原有的Standard难度集合
+            infoData._difficultyBeatmapSets = infoData._difficultyBeatmapSets.filter(set => set._beatmapCharacteristicName !== 'Standard');
+
+            // 创建所选难度的副本并重命名为Standard
+            let newStandardSet = JSON.parse(JSON.stringify(selectedSet));
+            newStandardSet._beatmapCharacteristicName = 'Standard';
+
+            // 添加新的Standard难度集合
+            infoData._difficultyBeatmapSets.push(newStandardSet);
         }
     }
 
     // 更新Info.dat文件
     zip.file('Info.dat', JSON.stringify(infoData, null, 4));
 }
+
 function showReplacementOptionsPopup(options, zip, infoData) {
     let message = "请选择一个选项:\n";
     options.forEach((option, index) => {
@@ -402,7 +406,7 @@ function showReplacementOptionsPopup(options, zip, infoData) {
     let choice = prompt(message);
     if (choice > 0 && choice <= options.length) {
         let selectedOption = options[choice - 1];
-        replaceStandardWithSelected(zip, infoData, selectedOption, false);
+        replaceStandardWithSelected(zip, infoData, selectedOption);
     } else if (choice == options.length + 1) {
         // 不作任何操作，保留原Standard难度
     }
