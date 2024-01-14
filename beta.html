@@ -371,19 +371,23 @@ function addLog(message) {
             anchor.click();
             window.URL.revokeObjectURL(url);
         }
-function replaceStandardWithSelected(zip, infoData, selectedOption) {
-    let selectedSetIndex = infoData._difficultyBeatmapSets.findIndex(set => set._beatmapCharacteristicName === selectedOption);
-    
-    if (selectedSetIndex !== -1) {
-        // 移除原始的Standard集合
-        infoData._difficultyBeatmapSets = infoData._difficultyBeatmapSets.filter(set => set._beatmapCharacteristicName !== 'Standard');
+function replaceStandardWithSelected(zip, infoData, selectedOption, keepStandard) {
+    if (selectedOption) {
+        let selectedSetIndex = infoData._difficultyBeatmapSets.findIndex(set => set._beatmapCharacteristicName === selectedOption);
         
-        // 将选择的难度重命名为Standard
-        infoData._difficultyBeatmapSets[selectedSetIndex]._beatmapCharacteristicName = 'Standard';
-
-        // 更新Info.dat文件
-        zip.file('Info.dat', JSON.stringify(infoData, null, 4));
+        if (selectedSetIndex !== -1) {
+            if (!keepStandard) {
+                // 移除原始的Standard集合
+                infoData._difficultyBeatmapSets = infoData._difficultyBeatmapSets.filter(set => set._beatmapCharacteristicName !== 'Standard');
+            }
+            
+            // 将选择的难度重命名为Standard
+            infoData._difficultyBeatmapSets[selectedSetIndex]._beatmapCharacteristicName = 'Standard';
+        }
     }
+
+    // 更新Info.dat文件
+    zip.file('Info.dat', JSON.stringify(infoData, null, 4));
 }
 function showReplacementOptionsPopup(options, zip, infoData) {
     let message = "请选择一个选项:\n";
