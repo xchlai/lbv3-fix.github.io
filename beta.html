@@ -371,28 +371,35 @@ function addLog(message) {
             anchor.click();
             window.URL.revokeObjectURL(url);
         }
-        function replaceStandardWithSelected(zip, infoData, selectedOption) {
-    let selectedSet = infoData._difficultyBeatmapSets.find(set => set._beatmapCharacteristicName === selectedOption);
-    let standardSetIndex = infoData._difficultyBeatmapSets.findIndex(set => set._beatmapCharacteristicName === 'Standard');
+function replaceStandardWithSelected(zip, infoData, selectedOption) {
+    let selectedSetIndex = infoData._difficultyBeatmapSets.findIndex(set => set._beatmapCharacteristicName === selectedOption);
+    
+    if (selectedSetIndex !== -1) {
+        // 移除原始的Standard集合
+        infoData._difficultyBeatmapSets = infoData._difficultyBeatmapSets.filter(set => set._beatmapCharacteristicName !== 'Standard');
+        
+        // 将选择的难度重命名为Standard
+        infoData._difficultyBeatmapSets[selectedSetIndex]._beatmapCharacteristicName = 'Standard';
 
-    if (standardSetIndex !== -1 && selectedSet) {
-        infoData._difficultyBeatmapSets[standardSetIndex] = selectedSet;
-        infoData._difficultyBeatmapSets[standardSetIndex]._beatmapCharacteristicName = 'Standard';
+        // 更新Info.dat文件
         zip.file('Info.dat', JSON.stringify(infoData, null, 4));
     }
 }
-        function showReplacementOptionsPopup(options, zip, infoData) {
-    let message = "请选择一个选项来替换Standard:\n";
+function showReplacementOptionsPopup(options, zip, infoData) {
+    let message = "请选择一个选项:\n";
     options.forEach((option, index) => {
-        message += `${index + 1}. ${option}\n`;
+        message += `${index + 1}. 使用 ${option} 替换 Standard\n`;
     });
+    // 添加保留原Standard难度的选项
+    message += `${options.length + 1}. 保留原Standard难度\n`;
     message += "输入选项的编号:";
 
     let choice = prompt(message);
-    let selectedOption = options[choice - 1];
-
-    if (selectedOption) {
-        replaceStandardWithSelected(zip, infoData, selectedOption);
+    if (choice > 0 && choice <= options.length) {
+        let selectedOption = options[choice - 1];
+        replaceStandardWithSelected(zip, infoData, selectedOption, false);
+    } else if (choice == options.length + 1) {
+        // 不作任何操作，保留原Standard难度
     }
 }
     </script>
