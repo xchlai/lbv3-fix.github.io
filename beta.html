@@ -242,6 +242,33 @@
         function processZipFile(file) {
             JSZip.loadAsync(file)
                 .then(zip => {
+            if (zip.files['Info.dat']) {
+                zip.files['Info.dat'].async('string').then(infoContent => {
+                    try {
+                        let infoData = JSON.parse(infoContent);
+                        let difficultyMapSets = infoData._difficultyBeatmapSets || [];
+                        let options = [];
+
+                        difficultyMapSets.forEach(set => {
+                            if (set._beatmapCharacteristicName !== 'Standard') {
+                                options.push(set._beatmapCharacteristicName);
+                            }
+                        });
+
+                        if (options.length > 0) {
+                            showReplacementOptionsPopup(options, zip, infoData);
+                        }
+
+                        // ...其他代码...
+                    } catch (e) {
+                        console.error('处理Info.dat文件出错:', e);
+                    }
+                });
+                }
+
+
+
+
                     let promises = [];
                     let outputFileName = file.name.replace(/\.zip$/, '') + '_fixed.zip';
                     Object.keys(zip.files).forEach(fileName => {
@@ -344,6 +371,30 @@ function addLog(message) {
             anchor.click();
             window.URL.revokeObjectURL(url);
         }
+        function replaceStandardWithSelected(zip, infoData, selectedOption) {
+    let selectedSet = infoData._difficultyBeatmapSets.find(set => set._beatmapCharacteristicName === selectedOption);
+    let standardSetIndex = infoData._difficultyBeatmapSets.findIndex(set => set._beatmapCharacteristicName === 'Standard');
+
+    if (standardSetIndex !== -1 && selectedSet) {
+        infoData._difficultyBeatmapSets[standardSetIndex] = selectedSet;
+        infoData._difficultyBeatmapSets[standardSetIndex]._beatmapCharacteristicName = 'Standard';
+        zip.file('Info.dat', JSON.stringify(infoData, null, 4));
+    }
+}
+        function showReplacementOptionsPopup(options, zip, infoData) {
+    let message = "请选择一个选项来替换Standard:\n";
+    options.forEach((option, index) => {
+        message += `${index + 1}. ${option}\n`;
+    });
+    message += "输入选项的编号:";
+
+    let choice = prompt(message);
+    let selectedOption = options[choice - 1];
+
+    if (selectedOption) {
+        replaceStandardWithSelected(zip, infoData, selectedOption);
+    }
+}
     </script>
 </body>
 </html>
