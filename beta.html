@@ -395,7 +395,7 @@ function replaceStandardWithSelected(zip, infoData, selectedOption) {
 }
 
 function showReplacementOptionsPopup(options, zip, infoData) {
-    let message = "请选择一个选项:\n";
+    let message = "该谱面有多个难度组，是否使用非标准难度替换标准(Standard)难度？\n";
     options.forEach((option, index) => {
         message += `${index + 1}. 使用 ${option} 替换 Standard\n`;
     });
