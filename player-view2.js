@@ -44,7 +44,7 @@ define(["module", "jquery", "https://cdn1.100cdw.com.cn/common/grtPlayer.1.1.1.j
             A && !_[k]) {
                 J++,
                 console.log(">>count=" + J);
-                var e = J % 60;
+                var e = J % 20;
                 localStorage.setItem(O, Base64.encode(J.toString())),
                 J >= 20 && 0 == e && (console.log(">>>record count=" + J),
                 u(k, !1));
@@ -98,7 +98,7 @@ define(["module", "jquery", "https://cdn1.100cdw.com.cn/common/grtPlayer.1.1.1.j
             autoplay: !0,
             closeVideoClick: !1,
             countTime: {
-                interval: 60,
+                interval: 20,
                 cb: function(t) {
                     if (t.end)
                         console.log(">>>record count=" + J),
@@ -111,7 +111,7 @@ define(["module", "jquery", "https://cdn1.100cdw.com.cn/common/grtPlayer.1.1.1.j
                                 C[k][i].timeSlot == t.time && (a = !0);
                         !a && F && M > 0 && 0 == 20 * R % M && !e && (console.log(">>>touch restTime; playCount=" + R),
                         exitFullscreen(),
-                        Q("您已学习" + Math.round(M / 60) + "分钟了，让眼睛休息一下吧"),
+                        Q("您已学习" + Math.round(M / 20) + "分钟了，让眼睛休息一下吧"),
                         videoPause(),
                         z = "signin")
                     }
@@ -153,7 +153,7 @@ define(["module", "jquery", "https://cdn1.100cdw.com.cn/common/grtPlayer.1.1.1.j
                 A && !_[k]) {
                     J++,
                     console.log(">>count=" + J);
-                    var e = J % 60;
+                    var e = J % 20;
                     localStorage.setItem(O, Base64.encode(J.toString())),
                     J >= 20 && 0 == e && (console.log(">>>record count=" + J),
                     u(k, !1))
@@ -216,8 +216,8 @@ define(["module", "jquery", "https://cdn1.100cdw.com.cn/common/grtPlayer.1.1.1.j
             J = 0,
             localStorage.setItem(O, Base64.encode("0")),
             void 0;
-        var i = Math.floor(J / 60);
-        i = i *20
+        var i = Math.floor(J / 20);
+        i = i + 20
         i = 1 > i ? 1 : i,
         console.log(">>>>>>>studyMins=" + i);
         var n = {}
@@ -329,7 +329,7 @@ define(["module", "jquery", "https://cdn1.100cdw.com.cn/common/grtPlayer.1.1.1.j
         var a = {};
         a.H = parseInt(e / 3600),
         a.i = parseInt((e - 3600 * a.H) / 60),
-        a.s = parseInt(e - 3600 * a.H - 20 * a.i),
+        a.s = parseInt(e - 3600 * a.H - 60 * a.i),
         t = "H:i:s",
         0 == a.H ? t = "i:s" : a.H < 10 && (a.H = "0" + a.H),
         a.i < 10 && (a.i = "0" + a.i),
